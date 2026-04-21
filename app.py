@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # ─────────────────────────────────────────────────────────
-#  SAYFA YAPIKANDIRMASI
+#  SAYFA YAPILANDIRMASI
 # ─────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Dijital İtibar Risk Modeli",
@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────
-#  GLOBAL STİL
+#  GLOBAL STİL (TEMA UYUMLU HALE GETİRİLDİ)
 # ─────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -29,22 +29,12 @@ st.markdown("""
 html, body, [class*="css"] {
     font-family: 'DM Sans', sans-serif;
 }
-.stApp {
-    background: #0a0e1a;
-    color: #e8ecf4;
-}
-section[data-testid="stSidebar"] {
-    background: #0d1221;
-    border-right: 1px solid #1e2640;
-}
-section[data-testid="stSidebar"] * {
-    color: #c8d0e8 !important;
-}
+/* Claude'un sabit siyah arka plan zorlaması kaldırıldı, Streamlit'e bırakıldı */
 
 /* ── Başlık alanı ── */
 .hero-block {
-    background: linear-gradient(135deg, #0d1221 0%, #111827 50%, #0d1221 100%);
-    border: 1px solid #1e2a4a;
+    background: var(--secondary-background-color);
+    border: 1px solid rgba(128, 128, 128, 0.2);
     border-radius: 16px;
     padding: 36px 40px 28px;
     margin-bottom: 28px;
@@ -56,7 +46,7 @@ section[data-testid="stSidebar"] * {
     position: absolute;
     top: -60px; right: -60px;
     width: 280px; height: 280px;
-    background: radial-gradient(circle, rgba(99,102,241,.18) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(99,102,241,.15) 0%, transparent 70%);
     pointer-events: none;
 }
 .hero-block::after {
@@ -64,20 +54,21 @@ section[data-testid="stSidebar"] * {
     position: absolute;
     bottom: -40px; left: -40px;
     width: 200px; height: 200px;
-    background: radial-gradient(circle, rgba(16,185,129,.12) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(16,185,129,.1) 0%, transparent 70%);
     pointer-events: none;
 }
 .hero-title {
     font-family: 'DM Serif Display', serif;
     font-size: 2.1rem;
-    color: #ffffff;
+    color: var(--text-color);
     margin: 0 0 6px;
     letter-spacing: -.5px;
 }
 .hero-title span { color: #818cf8; }
 .hero-sub {
     font-size: .9rem;
-    color: #64748b;
+    color: var(--text-color);
+    opacity: 0.8;
     margin: 0;
     font-weight: 400;
 }
@@ -85,7 +76,7 @@ section[data-testid="stSidebar"] * {
     display: inline-block;
     background: rgba(99,102,241,.15);
     border: 1px solid rgba(99,102,241,.35);
-    color: #a5b4fc;
+    color: var(--text-color);
     border-radius: 20px;
     padding: 2px 12px;
     font-size: .75rem;
@@ -102,15 +93,15 @@ section[data-testid="stSidebar"] * {
     margin-bottom: 28px;
 }
 .kpi-card {
-    background: #111827;
-    border: 1px solid #1e2640;
+    background: var(--secondary-background-color);
+    border: 1px solid rgba(128, 128, 128, 0.2);
     border-radius: 14px;
     padding: 22px 24px;
     position: relative;
     overflow: hidden;
     transition: border-color .2s;
 }
-.kpi-card:hover { border-color: #3b4c7a; }
+.kpi-card:hover { border-color: var(--primary-color); }
 .kpi-card .accent-bar {
     position: absolute;
     top: 0; left: 0;
@@ -119,7 +110,8 @@ section[data-testid="stSidebar"] * {
 }
 .kpi-label {
     font-size: .78rem;
-    color: #64748b;
+    color: var(--text-color);
+    opacity: 0.7;
     text-transform: uppercase;
     letter-spacing: .8px;
     font-weight: 600;
@@ -128,7 +120,7 @@ section[data-testid="stSidebar"] * {
 .kpi-value {
     font-family: 'DM Serif Display', serif;
     font-size: 2.2rem;
-    color: #f1f5f9;
+    color: var(--text-color);
     line-height: 1;
 }
 .kpi-delta {
@@ -146,39 +138,38 @@ section[data-testid="stSidebar"] * {
 .section-header h3 {
     font-family: 'DM Serif Display', serif;
     font-size: 1.2rem;
-    color: #e2e8f0;
+    color: var(--text-color);
     margin: 0;
 }
 .section-divider {
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, #1e2640, transparent);
+    background: linear-gradient(90deg, rgba(128, 128, 128, 0.2), transparent);
 }
 
 /* ── Tablo ── */
 .risk-table-wrapper {
-    background: #111827;
-    border: 1px solid #1e2640;
+    background: var(--secondary-background-color);
+    border: 1px solid rgba(128, 128, 128, 0.2);
     border-radius: 14px;
     overflow: hidden;
 }
 .dataframe { background: transparent !important; }
 thead tr th {
-    background: #0d1221 !important;
-    color: #818cf8 !important;
+    background: var(--secondary-background-color) !important;
+    color: var(--text-color) !important;
     font-size: .78rem !important;
     letter-spacing: .6px !important;
     text-transform: uppercase !important;
     padding: 12px 16px !important;
-    border-bottom: 1px solid #1e2640 !important;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.2) !important;
 }
 tbody tr td {
-    color: #cbd5e1 !important;
+    color: var(--text-color) !important;
     font-size: .85rem !important;
     padding: 10px 16px !important;
-    border-bottom: 1px solid #0f172a !important;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1) !important;
 }
-tbody tr:hover td { background: #1a2235 !important; }
 
 /* ── Info / Warning kutuları ── */
 .info-box {
@@ -187,7 +178,7 @@ tbody tr:hover td { background: #1a2235 !important; }
     border-radius: 10px;
     padding: 14px 18px;
     font-size: .85rem;
-    color: #a5b4fc;
+    color: var(--text-color);
     margin-bottom: 20px;
 }
 .warn-box {
@@ -196,14 +187,14 @@ tbody tr:hover td { background: #1a2235 !important; }
     border-radius: 10px;
     padding: 14px 18px;
     font-size: .85rem;
-    color: #fcd34d;
+    color: var(--text-color);
     margin-bottom: 20px;
 }
 
 /* ── Sidebar ── */
 .sidebar-section {
-    background: #111827;
-    border: 1px solid #1e2640;
+    background: var(--secondary-background-color);
+    border: 1px solid rgba(128, 128, 128, 0.2);
     border-radius: 12px;
     padding: 16px;
     margin-bottom: 16px;
@@ -212,7 +203,8 @@ tbody tr:hover td { background: #1a2235 !important; }
     font-size: .75rem;
     text-transform: uppercase;
     letter-spacing: .8px;
-    color: #475569 !important;
+    color: var(--text-color) !important;
+    opacity: 0.8;
     font-weight: 600;
     margin-bottom: 12px;
 }
@@ -367,15 +359,15 @@ def tam_analiz(df: pd.DataFrame) -> pd.DataFrame:
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="DM Sans", color="#94a3b8"),
+    font=dict(family="DM Sans"),
     margin=dict(l=16, r=16, t=36, b=16),
     xaxis=dict(
-        gridcolor="#1e2640", zeroline=False, tickfont=dict(size=11),
-        linecolor="#1e2640",
+        gridcolor="rgba(128,128,128,0.2)", zeroline=False, tickfont=dict(size=11),
+        linecolor="rgba(128,128,128,0.2)",
     ),
     yaxis=dict(
-        gridcolor="#1e2640", zeroline=False, tickfont=dict(size=11),
-        linecolor="#1e2640",
+        gridcolor="rgba(128,128,128,0.2)", zeroline=False, tickfont=dict(size=11),
+        linecolor="rgba(128,128,128,0.2)",
     ),
 )
 
@@ -426,7 +418,7 @@ def risk_matrisi_ciz(df: pd.DataFrame) -> go.Figure:
                 color=renk,
                 size=alt["Risk_Skoru"] * 18 + 5,
                 opacity=0.82,
-                line=dict(color="rgba(255,255,255,.15)", width=1),
+                line=dict(color="rgba(128,128,128,.3)", width=1),
             ),
             hovertemplate="<b>%{text}</b><extra></extra>",
             text=hover_text,
@@ -436,7 +428,7 @@ def risk_matrisi_ciz(df: pd.DataFrame) -> go.Figure:
         **PLOTLY_LAYOUT,
         title=dict(
             text="Risk Matrisi — Merkezilik × Duygu Şiddeti",
-            font=dict(size=13, color="#e2e8f0"),
+            font=dict(size=13),
             x=0.02,
         ),
         xaxis_title="Ağ Merkeziliği (SNA)",
@@ -461,7 +453,7 @@ def duygu_dagilimi_ciz(df: pd.DataFrame) -> go.Figure:
         marker=dict(
             color=df["Duygu_Skoru"],
             colorscale=[[0, "#ef4444"], [0.5, "#f59e0b"], [1, "#10b981"]],
-            line=dict(color="rgba(0,0,0,.3)", width=.5),
+            line=dict(color="rgba(128,128,128,.3)", width=.5),
         ),
         hovertemplate="Duygu Aralığı: %{x}<br>Yorum: %{y}<extra></extra>",
     ))
@@ -469,7 +461,7 @@ def duygu_dagilimi_ciz(df: pd.DataFrame) -> go.Figure:
         **PLOTLY_LAYOUT,
         title=dict(
             text="Duygu Skoru Dağılımı",
-            font=dict(size=13, color="#e2e8f0"),
+            font=dict(size=13),
             x=0.02,
         ),
         xaxis_title="Polarity Skoru",
@@ -487,7 +479,7 @@ def risk_seviyesi_pie(df: pd.DataFrame) -> go.Figure:
         hole=0.62,
         marker=dict(
             colors=["#10b981", "#f59e0b", "#ef4444"],
-            line=dict(color="#0a0e1a", width=3),
+            line=dict(color="rgba(128,128,128,.1)", width=3),
         ),
         textfont=dict(size=12, family="DM Sans"),
         hovertemplate="%{label}<br>%{value} kullanıcı (%{percent})<extra></extra>",
@@ -496,7 +488,7 @@ def risk_seviyesi_pie(df: pd.DataFrame) -> go.Figure:
         **PLOTLY_LAYOUT,
         title=dict(
             text="Risk Seviyesi Dağılımı",
-            font=dict(size=13, color="#e2e8f0"),
+            font=dict(size=13),
             x=0.02,
         ),
         legend=dict(font=dict(size=11), bgcolor="rgba(0,0,0,0)"),
@@ -511,10 +503,10 @@ def risk_seviyesi_pie(df: pd.DataFrame) -> go.Figure:
 with st.sidebar:
     st.markdown("""
     <div style='padding:16px 0 8px;'>
-        <div style='font-family:"DM Serif Display",serif;font-size:1.15rem;color:#e2e8f0;'>
+        <div style='font-family:"DM Serif Display",serif;font-size:1.15rem;color:var(--text-color);'>
             🔬 İtibar Risk Modeli
         </div>
-        <div style='font-size:.75rem;color:#475569;margin-top:4px;'>
+        <div style='font-size:.75rem;color:var(--text-color);opacity:0.7;margin-top:4px;'>
             Hibrit NLP × SNA Analiz Platformu
         </div>
     </div>
@@ -539,12 +531,12 @@ with st.sidebar:
     st.divider()
 
     st.markdown("""
-    <div style='font-size:.75rem;color:#334155;line-height:1.6;'>
-        <b style='color:#475569;'>Metodoloji:</b><br>
+    <div style='font-size:.75rem;color:var(--text-color);opacity:0.8;line-height:1.6;'>
+        <b>Metodoloji:</b><br>
         • NLP → TextBlob Polarity<br>
         • SNA → Degree Centrality (normalize)<br>
         • Risk = |Polarity| × Merkezilik<br><br>
-        <b style='color:#475569;'>Kaynak veri:</b><br>
+        <b>Kaynak veri:</b><br>
         Philadelphia Yelp Restaurant Dataset<br>
         <i>(Yüksek Lisans Tezi — 2024)</i>
     </div>
@@ -616,7 +608,7 @@ kpi_html = f"""
     <div class="accent-bar" style="background:linear-gradient(#818cf8,#4f46e5);"></div>
     <div class="kpi-label">Toplam Yorum</div>
     <div class="kpi-value">{len(df):,}</div>
-    <div class="kpi-delta" style="color:#64748b;">Veri setindeki toplam kayıt</div>
+    <div class="kpi-delta" style="color:var(--text-color);opacity:0.7;">Veri setindeki toplam kayıt</div>
   </div>
   <div class="kpi-card">
     <div class="accent-bar" style="background:linear-gradient(#34d399,#059669);"></div>
@@ -624,7 +616,7 @@ kpi_html = f"""
     <div class="kpi-value" style="color:{'#ef4444' if ort_duygu < 0 else '#10b981'};">
       {ort_duygu:+.3f}
     </div>
-    <div class="kpi-delta" style="color:{'#ef4444' if ort_duygu < 0 else '#64748b'};">
+    <div class="kpi-delta" style="color:{'#ef4444' if ort_duygu < 0 else 'var(--text-color)'};opacity:{'1' if ort_duygu < 0 else '0.7'};">
       {'⚠️ Negatif eğilim — dikkat!' if ort_duygu < -0.05 else '✅ Genel duygu dengeli'}
     </div>
   </div>
@@ -738,7 +730,7 @@ else:
 #  FOOTER
 # ─────────────────────────────────────────────────────────
 st.markdown("""
-<div style='text-align:center;padding:36px 0 20px;color:#1e2640;font-size:.78rem;'>
+<div style='text-align:center;padding:36px 0 20px;color:var(--text-color);opacity:0.6;font-size:.78rem;'>
     Hibrit Dijital İtibar Risk Modeli &nbsp;·&nbsp; NLP × SNA &nbsp;·&nbsp;
     Yüksek Lisans Tezi Platformu &nbsp;·&nbsp; Powered by Streamlit
 </div>
