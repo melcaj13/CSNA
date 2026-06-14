@@ -334,10 +334,26 @@ def sna_analizi(df: pd.DataFrame) -> pd.DataFrame:
 
 def risk_skoru_hesapla(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df["Duygu_Siddeti"] = df["Duygu_Skoru"].abs()
-    df["Risk_Skoru"] = df["Duygu_Siddeti"] * df["Merkezilik"]
-    df["Risk_Skoru"] = (df["Risk_Skoru"] - df["Risk_Skoru"].min()) / \
-                       (df["Risk_Skoru"].max() - df["Risk_Skoru"].min() + 1e-9)
+
+    # Tezdeki modele uygun şekilde yalnızca negatif yorumlar risk üretir.
+    # Pozitif ve nötr yorumların negatiflik değeri 0 kabul edilir.
+    df["Negatiflik"] = df["Duygu_Skoru"].apply(lambda x: abs(x) if x < 0 else 0)
+
+    # Eski grafik fonksiyonlarıyla uyum için aynı değeri bu sütunda da tutuyoruz.
+    df["Duygu_Siddeti"] = df["Negatiflik"]
+
+    # Tez formülü: Risk Skoru = Merkezilik × Negatiflik
+    df["Ham_Risk_Skoru"] = df["Merkezilik"] * df["Negatiflik"]
+
+    # Dashboard üzerinde okunabilirlik için 0-1 aralığına normalize edilir.
+    min_risk = df["Ham_Risk_Skoru"].min()
+    max_risk = df["Ham_Risk_Skoru"].max()
+
+    if max_risk == min_risk:
+        df["Risk_Skoru"] = 0.0
+    else:
+        df["Risk_Skoru"] = (df["Ham_Risk_Skoru"] - min_risk) / (max_risk - min_risk)
+
     df["Risk_Seviyesi"] = pd.cut(
         df["Risk_Skoru"],
         bins=[-0.001, 0.33, 0.66, 1.001],
@@ -408,10 +424,11 @@ def risk_matrisi_ciz(df: pd.DataFrame) -> go.Figure:
             alt.get("Kullanici_ID", pd.Series(["?"] * len(alt))).astype(str)
             + "<br>Risk Skoru: " + alt["Risk_Skoru"].round(3).astype(str)
             + "<br>Duygu: " + alt["Duygu_Skoru"].round(3).astype(str)
+            + "<br>Negatiflik: " + alt["Negatiflik"].round(3).astype(str)
         )
         fig.add_trace(go.Scatter(
             x=alt["Merkezilik"],
-            y=alt["Duygu_Siddeti"],
+            y=alt["Negatiflik"],
             mode="markers",
             name=seviye,
             marker=dict(
@@ -432,7 +449,7 @@ def risk_matrisi_ciz(df: pd.DataFrame) -> go.Figure:
             x=0.02,
         ),
         xaxis_title="Ağ Merkeziliği (SNA)",
-        yaxis_title="Duygu Şiddeti |Polarity| (NLP)",
+        yaxis_title="Negatiflik Değeri (NLP)",
         legend=dict(
             orientation="h",
             yanchor="bottom", y=1.02,
@@ -472,13 +489,15 @@ def duygu_dagilimi_ciz(df: pd.DataFrame) -> go.Figure:
 
 
 def risk_seviyesi_pie(df: pd.DataFrame) -> go.Figure:
-    sayimlar = df["Risk_Seviyesi"].value_counts()
+    seviye_sirasi = ["🟢 Düşük", "🟡 Orta", "🔴 Kritik"]
+    renk_sirasi = ["#10b981", "#f59e0b", "#ef4444"]
+    sayimlar = df["Risk_Seviyesi"].value_counts().reindex(seviye_sirasi, fill_value=0)
     fig = go.Figure(go.Pie(
         labels=sayimlar.index.tolist(),
         values=sayimlar.values.tolist(),
         hole=0.62,
         marker=dict(
-            colors=["#10b981", "#f59e0b", "#ef4444"],
+            colors=renk_sirasi,
             line=dict(color="rgba(128,128,128,.1)", width=3),
         ),
         textfont=dict(size=12, family="DM Sans"),
@@ -535,10 +554,10 @@ with st.sidebar:
         <b>Metodoloji:</b><br>
         • NLP → TextBlob Polarity<br>
         • SNA → Degree Centrality (normalize)<br>
-        • Risk = |Polarity| × Merkezilik<br><br>
+        • Risk = Negatiflik × Merkezilik<br><br>
         <b>Kaynak veri:</b><br>
         Philadelphia Yelp Restaurant Dataset<br>
-        <i>(Yüksek Lisans Tezi — 2024)</i>
+        <i>(Lisans Tezi — 2026)</i>
     </div>
     """, unsafe_allow_html=True)
 
@@ -688,7 +707,7 @@ if len(kritik_df) == 0:
     </div>
     """, unsafe_allow_html=True)
 else:
-    gosterilecek_sutunlar = ["Kullanici_ID", "Duygu_Skoru", "Merkezilik",
+    gosterilecek_sutunlar = ["Kullanici_ID", "Duygu_Skoru", "Negatiflik", "Merkezilik",
                              "Risk_Skoru", "Risk_Seviyesi"]
     if "Yorum_Metni" in kritik_df.columns:
         gosterilecek_sutunlar.insert(1, "Yorum_Metni")
@@ -705,7 +724,7 @@ else:
     )
 
     # Sayısal sütunları yuvarlayalım
-    for col in ["Duygu_Skoru", "Merkezilik", "Risk_Skoru"]:
+    for col in ["Duygu_Skoru", "Negatiflik", "Merkezilik", "Risk_Skoru"]:
         if col in tablo_df.columns:
             tablo_df[col] = tablo_df[col].round(4)
 
@@ -732,6 +751,6 @@ else:
 st.markdown("""
 <div style='text-align:center;padding:36px 0 20px;color:var(--text-color);opacity:0.6;font-size:.78rem;'>
     Hibrit Dijital İtibar Risk Modeli &nbsp;·&nbsp; NLP × SNA &nbsp;·&nbsp;
-    Yüksek Lisans Tezi Platformu &nbsp;·&nbsp; Powered by Streamlit
+    Lisans Tezi Platformu &nbsp;·&nbsp; Powered by Streamlit
 </div>
 """, unsafe_allow_html=True)
