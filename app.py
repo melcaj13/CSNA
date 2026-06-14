@@ -314,20 +314,60 @@ def nlp_analizi(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def sna_analizi(df: pd.DataFrame) -> pd.DataFrame:
-    """Arkadaş sayısı üzerinden normalize edilmiş merkezilik skoru."""
-    df = df.copy()
-    kaynak_sutun = None
-    for col in ["Arkadas_Sayisi", "Arkadaş_Sayısı", "Arkadaslar", "Friend_Count", "friends"]:
-        if col in df.columns:
-            kaynak_sutun = col
-            break
+    """SNA merkezilik skorunu hesapla.
 
-    if kaynak_sutun:
-        vals = pd.to_numeric(df[kaynak_sutun], errors="coerce").fillna(0)
+    Öncelik sırası:
+    1) Eğer yüklenen dosyada Degree/Betweenness/Closeness sütunları varsa,
+       tezdeki ana modele uygun olarak bu üç merkezilik metriği birlikte kullanılır.
+    2) Bu sütunlar yoksa, KDS prototipinin çalışabilmesi için arkadaş sayısı üzerinden
+       normalize edilmiş derece temsili kullanılır.
+    """
+    df = df.copy()
+
+    merkeziyet_adaylari = {
+        "degree": ["degree", "Degree", "Derece", "Derece_Merkeziligi", "degree_centrality"],
+        "betweenness": ["betweenness", "Betweenness", "Arasindalik", "Arasındalık", "Betweenness_Centrality"],
+        "closeness": ["closeness", "Closeness", "Yakinlik", "Yakınlık", "Closeness_Centrality"],
+    }
+
+    bulunanlar = {}
+    for metrik, adaylar in merkeziyet_adaylari.items():
+        for col in adaylar:
+            if col in df.columns:
+                bulunanlar[metrik] = col
+                break
+
+    def minmax(vals):
+        vals = pd.to_numeric(vals, errors="coerce").fillna(0)
         mn, mx = vals.min(), vals.max()
-        df["Merkezilik"] = (vals - mn) / (mx - mn + 1e-9)
+        if mx == mn:
+            return pd.Series([0.0] * len(vals), index=vals.index)
+        return (vals - mn) / (mx - mn)
+
+    if all(k in bulunanlar for k in ["degree", "betweenness", "closeness"]):
+        df["n_degree"] = minmax(df[bulunanlar["degree"]])
+        df["n_betweenness"] = minmax(df[bulunanlar["betweenness"]])
+        df["n_closeness"] = minmax(df[bulunanlar["closeness"]])
+
+        # Tezdeki üçlü merkezilik mantığı: yapısal güç = üç normalize metriğin birleşimi.
+        df["Yapisal_Guc"] = df["n_degree"] + df["n_betweenness"] + df["n_closeness"]
+
+        # Grafik ekseni okunabilir kalsın diye 0-1 ölçeğinde ortalama merkezilik de tutulur.
+        df["Merkezilik"] = df["Yapisal_Guc"] / 3
     else:
-        df["Merkezilik"] = np.random.uniform(0.05, 0.95, len(df))
+        kaynak_sutun = None
+        for col in ["Arkadas_Sayisi", "Arkadaş_Sayısı", "Arkadaslar", "Friend_Count", "friends"]:
+            if col in df.columns:
+                kaynak_sutun = col
+                break
+
+        if kaynak_sutun:
+            df["Merkezilik"] = minmax(df[kaynak_sutun])
+        else:
+            df["Merkezilik"] = 0.0
+
+        # Üçlü metrik yoksa yapısal güç, derece temsili olan Merkezilik ile aynı kabul edilir.
+        df["Yapisal_Guc"] = df["Merkezilik"]
 
     return df
 
@@ -342,8 +382,10 @@ def risk_skoru_hesapla(df: pd.DataFrame) -> pd.DataFrame:
     # Eski grafik fonksiyonlarıyla uyum için aynı değeri bu sütunda da tutuyoruz.
     df["Duygu_Siddeti"] = df["Negatiflik"]
 
-    # Tez formülü: Risk Skoru = Merkezilik × Negatiflik
-    df["Ham_Risk_Skoru"] = df["Merkezilik"] * df["Negatiflik"]
+    # Tez formülü: Risk Skoru = Yapısal Güç × Negatiflik
+    # Yapısal Güç varsa üç merkezilik metriğinin birleşimi, yoksa derece/arkadaş sayısı temsilidir.
+    yapisal_sutun = "Yapisal_Guc" if "Yapisal_Guc" in df.columns else "Merkezilik"
+    df["Ham_Risk_Skoru"] = df[yapisal_sutun] * df["Negatiflik"]
 
     # Dashboard üzerinde okunabilirlik için 0-1 aralığına normalize edilir.
     min_risk = df["Ham_Risk_Skoru"].min()
@@ -553,8 +595,8 @@ with st.sidebar:
     <div style='font-size:.75rem;color:var(--text-color);opacity:0.8;line-height:1.6;'>
         <b>Metodoloji:</b><br>
         • NLP → TextBlob Polarity<br>
-        • SNA → Degree Centrality (normalize)<br>
-        • Risk = Negatiflik × Merkezilik<br><br>
+        • SNA → Degree + Betweenness + Closeness; yoksa Degree temsili<br>
+        • Risk = Negatiflik × Yapısal Güç<br><br>
         <b>Kaynak veri:</b><br>
         Philadelphia Yelp Restaurant Dataset<br>
         <i>(Lisans Tezi — 2026)</i>
